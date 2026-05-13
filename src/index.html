@@ -4,11 +4,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Cube Auth Prototype</title>
+    <title>CubeAuth Prototype</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+    <div id="ui-overlay">
+        <h1>CubeAuth</h1>
+        <p>Resolva para desbloquear</p>
+    </div>
 
+    <div class="controls">
+        <button onclick="changeSize(2)">2x2</button>
+        <button onclick="changeSize(3)">3x3</button>
+        <button onclick="changeSize(4)">4x4</button>
+    </div>
+
+    <div id="password-backup">
+        <button>Usar Senha</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="script.js"></script>
 </body>
 
 </html>
