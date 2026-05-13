@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
 let scene, camera, renderer, controls;
 let cubeGroup;
 let currentSize = 3;
@@ -30,6 +33,28 @@ function init() {
     createCube(currentSize);
     animate();
 }
+
+function onPointerDown(event) {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(cubeGroup.children);
+
+    if (intersects.length > 0) {
+        const piece = intersects[0].object;
+        
+        piece.scale.set(0.8, 0.8, 0.8);
+        setTimeout(() => {
+            piece.scale.set(1, 1, 1);
+        }, 150);
+        
+        console.log("Peça selecionada:", piece.position);
+    }
+}
+
+window.addEventListener('pointerdown', onPointerDown);
 
 function createCube(size) {
     if (cubeGroup) scene.remove(cubeGroup);
