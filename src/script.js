@@ -44,12 +44,12 @@ function createCube(size) {
                 if (x === 0 || x === size - 1 || y === 0 || y === size - 1 || z === 0 || z === size - 1) {
                     const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
                     const materials = [
-                        new THREE.MeshStandardMaterial({ color: 0xff0000 }), // PosX - Vermelho
-                        new THREE.MeshStandardMaterial({ color: 0xffa500 }), // NegX - Laranja
-                        new THREE.MeshStandardMaterial({ color: 0xffffff }), // PosY - Branco
-                        new THREE.MeshStandardMaterial({ color: 0xffff00 }), // NegY - Amarelo
-                        new THREE.MeshStandardMaterial({ color: 0x0000ff }), // PosZ - Azul
-                        new THREE.MeshStandardMaterial({ color: 0x00ff00 })  // NegZ - Verde
+                        new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 80 }), // PosX - Vermelho
+                        new THREE.MeshPhongMaterial({ color: 0xffa500, shininess: 80 }), // NegX - Laranja
+                        new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 80 }), // PosY - Branco
+                        new THREE.MeshPhongMaterial({ color: 0xffff00, shininess: 80 }), // NegY - Amarelo
+                        new THREE.MeshPhongMaterial({ color: 0x0000ff, shininess: 80 }), // PosZ - Azul
+                        new THREE.MeshPhongMaterial({ color: 0x00ff00, shininess: 80 })  // NegZ - Verde
                     ];
 
                     const piece = new THREE.Mesh(geometry, materials);
