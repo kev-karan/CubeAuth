@@ -21,11 +21,11 @@ function init() {
     controls.minDistance = 4;
     controls.maxDistance = 15
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 50);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+    directionalLight.position.set(5, 10, 7);
+    scene.add(directionalLight);
 
     createCube(currentSize);
     animate();
