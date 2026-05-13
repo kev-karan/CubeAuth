@@ -44,12 +44,12 @@ function createCube(size) {
                 if (x === 0 || x === size - 1 || y === 0 || y === size - 1 || z === 0 || z === size - 1) {
                     const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
                     const materials = [
-                        new THREE.MeshPhongMaterial({ color: 0xff0000, shininess: 80 }), // PosX - Vermelho
-                        new THREE.MeshPhongMaterial({ color: 0xffa500, shininess: 80 }), // NegX - Laranja
-                        new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 80 }), // PosY - Branco
-                        new THREE.MeshPhongMaterial({ color: 0xffff00, shininess: 80 }), // NegY - Amarelo
-                        new THREE.MeshPhongMaterial({ color: 0x0000ff, shininess: 80 }), // PosZ - Azul
-                        new THREE.MeshPhongMaterial({ color: 0x00ff00, shininess: 80 })  // NegZ - Verde
+                        new THREE.MeshPhongMaterial({ color: 0xc41e3a, emissive: 0x220000, shininess: 80 }), // PosX - Vermelho
+                        new THREE.MeshPhongMaterial({ color: 0xff5800, emissive: 0x331100, shininess: 80 }), // NegX - Laranja Vibrante
+                        new THREE.MeshPhongMaterial({ color: 0xdddddd, emissive: 0x111111, shininess: 80 }), // PosY - Branco (levemente cinza para não estourar a luz)
+                        new THREE.MeshPhongMaterial({ color: 0xffd500, emissive: 0x333300, shininess: 80 }), // NegY - Amarelo
+                        new THREE.MeshPhongMaterial({ color: 0x0051ba, emissive: 0x001133, shininess: 80 }), // PosZ - Azul
+                        new THREE.MeshPhongMaterial({ color: 0x009e60, emissive: 0x002211, shininess: 80 })  // NegZ - Verde
                     ];
 
                     const piece = new THREE.Mesh(geometry, materials);
