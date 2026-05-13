@@ -4,6 +4,11 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+let isDraggingPiece = false;
+let startClickPosition = new THREE.Vector2();
+let selectedFaceNormal = null;
+let selectedPiece = null;
+
 let scene, camera, renderer, controls;
 let cubeGroup;
 let currentSize = 3;
@@ -43,19 +48,34 @@ function onPointerDown(event) {
     const intersects = raycaster.intersectObjects(cubeGroup.children);
 
     if (intersects.length > 0) {
-        const piece = intersects[0].object;
+        isDraggingPiece = true;
+        controls.enabled = false;
         
-        piece.scale.set(0.8, 0.8, 0.8);
+        selectedPiece = intersects[0].object;
+        selectedFaceNormal = intersects[0].face.normal.clone();
+        startClickPosition.set(event.clientX, event.clientY);
+        
+        selectedPiece.scale.set(0.8, 0.8, 0.8);
         setTimeout(() => {
-            piece.scale.set(1, 1, 1);
+            if(selectedPiece) selectedPiece.scale.set(1, 1, 1);
         }, 150);
         
-        console.log("Peça selecionada:", piece.position);
+        console.log("Câmera travada. Preparando para girar...");
+    }
+}
+
+function onPointerUp(event) {
+    if (isDraggingPiece) {
+        isDraggingPiece = false;
+        controls.enabled = true;
+        selectedPiece = null;
+        
+        console.log("Movimento concluído. Câmera destravada.");
     }
 }
 
 window.addEventListener('pointerdown', onPointerDown);
-
+window.addEventListener('pointerup', onPointerUp);
 function createCube(size) {
     if (cubeGroup) scene.remove(cubeGroup);
     cubeGroup = new THREE.Group();
