@@ -9,6 +9,10 @@ let startClickPosition = new THREE.Vector2();
 let selectedFaceNormal = null;
 let selectedPiece = null;
 
+let pivot; 
+let dragDirection = null; 
+let currentSlice = []; 
+
 let scene, camera, renderer, controls;
 let cubeGroup;
 let currentSize = 3;
@@ -27,7 +31,7 @@ function init() {
     controls.enableDamping = true;
     controls.enablePan = false;
     controls.minDistance = 4;
-    controls.maxDistance = 15
+    controls.maxDistance = 15;
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
     scene.add(ambientLight);    
@@ -35,14 +39,38 @@ function init() {
     directionalLight.position.set(5, 10, 7);
     scene.add(directionalLight);
 
+    pivot = new THREE.Group();
+    scene.add(pivot);
+
     createCube(currentSize);
     animate();
+}
+
+function getRotationAxis(faceNormal, dx, dy) {
+    if (Math.abs(faceNormal.z) > 0.5) return Math.abs(dx) > Math.abs(dy) ? 'y' : 'x'; // Face Frente/Trás
+    if (Math.abs(faceNormal.x) > 0.5) return Math.abs(dx) > Math.abs(dy) ? 'y' : 'z'; // Face Direita/Esquerda
+    if (Math.abs(faceNormal.y) > 0.5) return Math.abs(dx) > Math.abs(dy) ? 'z' : 'x'; // Face Cima/Baixo
+    return 'y';
+}
+
+function groupSlice(piece, axis) {
+    pivot.rotation.set(0, 0, 0); 
+    currentSlice = [];
+    
+    const sliceCoord = piece.position[axis]; 
+    const pieces = [...cubeGroup.children]; 
+    
+    pieces.forEach(p => {
+        if (Math.abs(p.position[axis] - sliceCoord) < 0.1) {
+            currentSlice.push(p);
+            pivot.attach(p);
+        }
+    });
 }
 
 function onPointerDown(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
     raycaster.setFromCamera(mouse, camera);
 
     const intersects = raycaster.intersectObjects(cubeGroup.children);
@@ -52,15 +80,35 @@ function onPointerDown(event) {
         controls.enabled = false;
         
         selectedPiece = intersects[0].object;
-        selectedFaceNormal = intersects[0].face.normal.clone();
         startClickPosition.set(event.clientX, event.clientY);
         
-        selectedPiece.scale.set(0.8, 0.8, 0.8);
-        setTimeout(() => {
-            if(selectedPiece) selectedPiece.scale.set(1, 1, 1);
-        }, 150);
+        selectedFaceNormal = intersects[0].face.normal.clone();
+        selectedFaceNormal.transformDirection(selectedPiece.matrixWorld).round();
         
-        console.log("Câmera travada. Preparando para girar...");
+        const pieceToAnimate = selectedPiece;
+        pieceToAnimate.scale.set(0.8, 0.8, 0.8);
+        setTimeout(() => {
+            pieceToAnimate.scale.set(1, 1, 1);
+        }, 150);
+    }
+}
+
+function onPointerMove(event) {
+    if (!isDraggingPiece || !selectedPiece) return;
+
+    const deltaX = event.clientX - startClickPosition.x;
+    const deltaY = event.clientY - startClickPosition.y;
+
+    if (Math.abs(deltaX) < 5 && Math.abs(deltaY) < 5 && dragDirection === null) return;
+
+    if (dragDirection === null) {
+        dragDirection = getRotationAxis(selectedFaceNormal, deltaX, deltaY);
+        groupSlice(selectedPiece, dragDirection);
+    }
+
+    if (dragDirection) {
+        const rotationAmount = (Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY) * 0.01;
+        pivot.rotation[dragDirection] = rotationAmount;
     }
 }
 
@@ -68,14 +116,34 @@ function onPointerUp(event) {
     if (isDraggingPiece) {
         isDraggingPiece = false;
         controls.enabled = true;
-        selectedPiece = null;
         
-        console.log("Movimento concluído. Câmera destravada.");
+        if (dragDirection !== null) {
+            const snapAngle = Math.round(pivot.rotation[dragDirection] / (Math.PI / 2)) * (Math.PI / 2);
+            pivot.rotation[dragDirection] = snapAngle;
+            pivot.updateMatrixWorld();
+            
+            currentSlice.forEach(child => {
+                cubeGroup.attach(child);
+                
+                child.position.x = Math.round(child.position.x * 1000) / 1000;
+                child.position.y = Math.round(child.position.y * 1000) / 1000;
+                child.position.z = Math.round(child.position.z * 1000) / 1000;
+
+                child.rotation.x = Math.round(child.rotation.x / (Math.PI / 2)) * (Math.PI / 2);
+                child.rotation.y = Math.round(child.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+                child.rotation.z = Math.round(child.rotation.z / (Math.PI / 2)) * (Math.PI / 2);
+            });
+        }
+        
+        dragDirection = null;
+        selectedPiece = null;
     }
 }
 
 window.addEventListener('pointerdown', onPointerDown);
+window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('pointerup', onPointerUp);
+
 function createCube(size) {
     if (cubeGroup) scene.remove(cubeGroup);
     cubeGroup = new THREE.Group();
@@ -91,7 +159,7 @@ function createCube(size) {
                     const materials = [
                         new THREE.MeshPhongMaterial({ color: 0xc41e3a, emissive: 0x220000, shininess: 80 }), // PosX - Vermelho
                         new THREE.MeshPhongMaterial({ color: 0xff5800, emissive: 0x331100, shininess: 80 }), // NegX - Laranja Vibrante
-                        new THREE.MeshPhongMaterial({ color: 0xdddddd, emissive: 0x111111, shininess: 80 }), // PosY - Branco (levemente cinza para não estourar a luz)
+                        new THREE.MeshPhongMaterial({ color: 0xdddddd, emissive: 0x111111, shininess: 80 }), // PosY - Branco
                         new THREE.MeshPhongMaterial({ color: 0xffd500, emissive: 0x333300, shininess: 80 }), // NegY - Amarelo
                         new THREE.MeshPhongMaterial({ color: 0x0051ba, emissive: 0x001133, shininess: 80 }), // PosZ - Azul
                         new THREE.MeshPhongMaterial({ color: 0x009e60, emissive: 0x002211, shininess: 80 })  // NegZ - Verde
