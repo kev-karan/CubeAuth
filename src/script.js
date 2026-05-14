@@ -5,8 +5,10 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
 let isDraggingPiece = false;
-let startClickPosition = new THREE.Vector2();
-let selectedFaceNormal = null;
+let startDragPoint3D = new THREE.Vector3();
+let dragPlane = new THREE.Plane();
+let rotationAxisVector = new THREE.Vector3();
+let dragLine = new THREE.Vector3();let selectedFaceNormal = null;
 let selectedPiece = null;
 
 let pivot; 
@@ -46,13 +48,6 @@ function init() {
     animate();
 }
 
-function getRotationAxis(faceNormal, dx, dy) {
-    if (Math.abs(faceNormal.z) > 0.5) return Math.abs(dx) > Math.abs(dy) ? 'y' : 'x'; // Face Frente/Trás
-    if (Math.abs(faceNormal.x) > 0.5) return Math.abs(dx) > Math.abs(dy) ? 'y' : 'z'; // Face Direita/Esquerda
-    if (Math.abs(faceNormal.y) > 0.5) return Math.abs(dx) > Math.abs(dy) ? 'z' : 'x'; // Face Cima/Baixo
-    return 'y';
-}
-
 function groupSlice(piece, axis) {
     pivot.rotation.set(0, 0, 0); 
     currentSlice = [];
@@ -80,15 +75,17 @@ function onPointerDown(event) {
         controls.enabled = false;
         
         selectedPiece = intersects[0].object;
-        startClickPosition.set(event.clientX, event.clientY);
         
         selectedFaceNormal = intersects[0].face.normal.clone();
         selectedFaceNormal.transformDirection(selectedPiece.matrixWorld).round();
         
+        startDragPoint3D.copy(intersects[0].point);
+        dragPlane.setFromNormalAndCoplanarPoint(selectedFaceNormal, startDragPoint3D);
+        
         const pieceToAnimate = selectedPiece;
         pieceToAnimate.scale.set(0.8, 0.8, 0.8);
         setTimeout(() => {
-            pieceToAnimate.scale.set(1, 1, 1);
+            if(pieceToAnimate) pieceToAnimate.scale.set(1, 1, 1);
         }, 150);
     }
 }
@@ -96,31 +93,43 @@ function onPointerDown(event) {
 function onPointerMove(event) {
     if (!isDraggingPiece || !selectedPiece) return;
 
-    const deltaX = event.clientX - startClickPosition.x;
-    const deltaY = event.clientY - startClickPosition.y;
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
 
-    if (Math.abs(deltaX) < 5 && Math.abs(deltaY) < 5 && dragDirection === null) return;
+    let currentDragPoint3D = new THREE.Vector3();
+    let intersect = raycaster.ray.intersectPlane(dragPlane, currentDragPoint3D);
+
+    if (!intersect) return;
+
+    let dragVector3D = currentDragPoint3D.clone().sub(startDragPoint3D);
+
+    if (dragVector3D.length() < 0.1 && dragDirection === null) return;
 
     if (dragDirection === null) {
-        dragDirection = getRotationAxis(selectedFaceNormal, deltaX, deltaY);
+        let absX = Math.abs(dragVector3D.x);
+        let absY = Math.abs(dragVector3D.y);
+        let absZ = Math.abs(dragVector3D.z);
+
+        if (absX > absY && absX > absZ) dragLine.set(1, 0, 0);
+        else if (absY > absX && absY > absZ) dragLine.set(0, 1, 0);
+        else dragLine.set(0, 0, 1);
+
+        rotationAxisVector.crossVectors(selectedFaceNormal, dragLine).round();
+
+        if (Math.abs(rotationAxisVector.x) > 0) dragDirection = 'x';
+        else if (Math.abs(rotationAxisVector.y) > 0) dragDirection = 'y';
+        else if (Math.abs(rotationAxisVector.z) > 0) dragDirection = 'z';
+
         groupSlice(selectedPiece, dragDirection);
     }
 
     if (dragDirection) {
-        let rotationAmount = 0;
-        const speed = 0.01;
-
-        if (dragDirection === 'x') {
-            if (Math.abs(selectedFaceNormal.z) > 0.5) rotationAmount = deltaY * speed * Math.sign(selectedFaceNormal.z);
-            else if (Math.abs(selectedFaceNormal.y) > 0.5) rotationAmount = deltaY * speed * Math.sign(selectedFaceNormal.y);
-        } else if (dragDirection === 'y') {
-            rotationAmount = deltaX * speed;
-        } else if (dragDirection === 'z') {
-            if (Math.abs(selectedFaceNormal.x) > 0.5) rotationAmount = deltaY * speed * -Math.sign(selectedFaceNormal.x);
-            else if (Math.abs(selectedFaceNormal.y) > 0.5) rotationAmount = deltaX * speed * -Math.sign(selectedFaceNormal.y);
-        }
-
-        pivot.rotation[dragDirection] = rotationAmount;
+        let dragDistance = dragVector3D.dot(dragLine);
+        let axisMultiplier = rotationAxisVector[dragDirection];
+        
+        let speed = 1.5; 
+        pivot.rotation[dragDirection] = dragDistance * axisMultiplier * speed;
     }
 }
 
