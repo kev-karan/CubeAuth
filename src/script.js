@@ -154,6 +154,8 @@ function onPointerUp(event) {
                 child.rotation.y = Math.round(child.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
                 child.rotation.z = Math.round(child.rotation.z / (Math.PI / 2)) * (Math.PI / 2);
             });
+            
+            checkWinCondition();
         }
         
         dragDirection = null;
@@ -164,6 +166,74 @@ function onPointerUp(event) {
 window.addEventListener('pointerdown', onPointerDown);
 window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('pointerup', onPointerUp);
+
+function triggerUnlock() {
+    console.log("VITÓRIA! O cubo foi resolvido!");
+    
+    const title = document.querySelector('#ui-overlay h1');
+    const desc = document.querySelector('#ui-overlay p');
+    
+    title.style.color = '#00ff00';
+    title.style.textShadow = '0 0 10px #00ff00';
+    title.innerText = 'DESBLOQUEADO';
+    desc.innerText = 'Autenticação concluída com sucesso!';
+}
+
+function checkWinCondition() {
+    const limit = ((currentSize - 1) / 2) * 1.05;
+    const maxBound = Math.round(limit * 1000) / 1000;
+
+    const globalFaces = [
+        { normal: new THREE.Vector3(1, 0, 0), axis: 'x', value: maxBound },   // Direita
+        { normal: new THREE.Vector3(-1, 0, 0), axis: 'x', value: -maxBound }, // Esquerda
+        { normal: new THREE.Vector3(0, 1, 0), axis: 'y', value: maxBound },   // Cima
+        { normal: new THREE.Vector3(0, -1, 0), axis: 'y', value: -maxBound }, // Baixo
+        { normal: new THREE.Vector3(0, 0, 1), axis: 'z', value: maxBound },   // Frente
+        { normal: new THREE.Vector3(0, 0, -1), axis: 'z', value: -maxBound }  // Trás
+    ];
+
+    const localNormals = [
+        new THREE.Vector3(1, 0, 0),  // 0: Vermelho
+        new THREE.Vector3(-1, 0, 0), // 1: Laranja
+        new THREE.Vector3(0, 1, 0),  // 2: Branco
+        new THREE.Vector3(0, -1, 0), // 3: Amarelo
+        new THREE.Vector3(0, 0, 1),  // 4: Azul
+        new THREE.Vector3(0, 0, -1)  // 5: Verde
+    ];
+
+    let isSolved = true;
+
+    for (let face of globalFaces) {
+        let firstColorIndex = null;
+
+        const piecesOnFace = cubeGroup.children.filter(p => Math.abs(p.position[face.axis] - face.value) < 0.1);
+
+        for (let piece of piecesOnFace) {
+            let pieceColorIndex = -1;
+            
+            for (let i = 0; i < localNormals.length; i++) {
+                let rotatedNormal = localNormals[i].clone().applyQuaternion(piece.quaternion).round();
+                if (rotatedNormal.equals(face.normal)) {
+                    pieceColorIndex = i;
+                    break;
+                }
+            }
+
+            if (firstColorIndex === null) {
+                firstColorIndex = pieceColorIndex;
+            } else if (pieceColorIndex !== firstColorIndex) {
+                isSolved = false;
+                break;
+            }
+        }
+
+        if (!isSolved) break;
+    }
+
+    if (isSolved) {
+        triggerUnlock();
+    }
+}
 
 function createCube(size) {
     if (cubeGroup) scene.remove(cubeGroup);
