@@ -107,7 +107,19 @@ function onPointerMove(event) {
     }
 
     if (dragDirection) {
-        const rotationAmount = (Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY) * 0.01;
+        let rotationAmount = 0;
+        const speed = 0.01;
+
+        if (dragDirection === 'x') {
+            if (Math.abs(selectedFaceNormal.z) > 0.5) rotationAmount = deltaY * speed * Math.sign(selectedFaceNormal.z);
+            else if (Math.abs(selectedFaceNormal.y) > 0.5) rotationAmount = deltaY * speed * Math.sign(selectedFaceNormal.y);
+        } else if (dragDirection === 'y') {
+            rotationAmount = deltaX * speed;
+        } else if (dragDirection === 'z') {
+            if (Math.abs(selectedFaceNormal.x) > 0.5) rotationAmount = deltaY * speed * -Math.sign(selectedFaceNormal.x);
+            else if (Math.abs(selectedFaceNormal.y) > 0.5) rotationAmount = deltaX * speed * -Math.sign(selectedFaceNormal.y);
+        }
+
         pivot.rotation[dragDirection] = rotationAmount;
     }
 }
